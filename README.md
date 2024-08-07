@@ -1,0 +1,1 @@
+This project covers call log creation in mongodb to be able to re-export missed calls of our clients for specific integration.

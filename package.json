@@ -1,0 +1,19 @@
+{
+  "name": "calllogcreation",
+  "version": "1.0.0",
+  "description": "This project covers call log creation in mongodb to be able to re-export missed calls of our clients for specific integration.",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "build": "rm -rf dist && tsc",
+    "start": "tsc && node dist/app.js",
+    "dev": "nodemon --inspect src/app.ts"
+  },
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "nodemon": "^3.1.4",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.5.4"
+  }
+}

@@ -24,3 +24,25 @@ services:
       ME_CONFIG_MONGODB_ADMINPASSWORD: root
       ME_CONFIG_MONGODB_URL: mongodb://root:root@mongo:27017/
       ME_CONFIG_BASICAUTH: false
+
+  db:
+    image: mariadb
+    restart: always
+    environment:
+      MARIADB_ROOT_PASSWORD: password
+      MARIADB_USER: cloudtalk
+      MARIADB_PASSWORD: password
+      MARIADB_DATABASE: integrations
+    ports:
+      - '3306:3306'
+    volumes:
+      - ./resources/sql:/docker-entrypoint-initdb.d
+
+  phpmyadmin:
+    image: phpmyadmin
+    restart: always
+    ports:
+      - 8080:80
+    environment:
+      PMA_HOST: db
+      PMA_ARBITRARY: 1

@@ -1,8 +1,8 @@
 import mongoose from 'mongoose';
 const { Schema } = mongoose;
 
-const INTEGRATIONS = ['salesforce', 'hubspot'] as const;
-type IntegrationTypes = typeof INTEGRATIONS[number];
+const INTEGRATIONS = ['salesforce', 'hubspot', 'pipedrive'] as const;
+export type IntegrationTypes = typeof INTEGRATIONS[number];
 
 const FLOWS = ['flowCallCreated'] as const;
 type FlowTypes = typeof FLOWS[number];
@@ -33,7 +33,7 @@ export interface IIntegration {
     error_stages: string[],
     created: string,
     modified: string,
-    serviceName: `integration_${IntegrationTypes}_${number}`,
+    serviceName: `integrations-${IntegrationTypes}-${number}`,
 };
 
 const integrationSchema = new Schema<IIntegration>({

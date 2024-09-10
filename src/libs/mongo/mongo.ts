@@ -1,25 +1,26 @@
-import mongoose, { Mongoose } from 'mongoose';
+import mongoose, { Mongoose, createConnection, Connection } from 'mongoose';
 
 class MongoDb {
-    private static mongoDbInstance: MongoDb | null;
-    private instance: Mongoose | null = null;
+    private static instance: MongoDb;
+    private mongoose: Mongoose | undefined;
 
-    private constructor() {}
-
-    public async initialize() {
-        this.instance = await mongoose.connect(process.env.MONGODB_URI);
-        console.log('Mongo connected');
+    public async connect(): Promise<Mongoose> {
+        if (!this.mongoose) {
+            this.mongoose = await mongoose.connect(process.env.MONGODB_URI);
+            console.log('Mongo connected');
+        }
+        return this.mongoose;
     }
 
-    public static getInstance() {
-        if (!this.mongoDbInstance) {
-            this.mongoDbInstance = new MongoDb();
+    public static getInstance(): MongoDb {
+        if (!MongoDb.instance) {
+            MongoDb.instance = new MongoDb();
         }
-        return this.mongoDbInstance;
+        return MongoDb.instance;
     }
 
     public async disconnect() {
-        this.instance?.disconnect();
+        this.mongoose?.disconnect();
         console.log('Mongo disconnecte');
     }
 

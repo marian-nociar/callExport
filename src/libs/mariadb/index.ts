@@ -16,7 +16,7 @@ class Database {
             password: process.env.MARIADB_PASSWORD,
             database: process.env.MARIADB_DATABASE,
             entities: [Integrations, IntegrationExtInstances],
-            synchronize: true,
+            // synchronize: true,
             logging: false,
         });
     }

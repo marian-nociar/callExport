@@ -1,5 +1,6 @@
 import { promises as fs, createReadStream, ReadStream, WriteStream } from 'node:fs';
 import { Parser } from 'csv-parse';
+import { BaseEventData } from './mongo/eventStrategies';
 
 class CsvFileLoader {
     private fileHandle: fs.FileHandle | null = null;
@@ -30,13 +31,13 @@ class CsvFileLoader {
         // }
     }
 
-    async *getCallIds(bulkSize: number) {
+    async *getExportData(bulkSize: number) {
         // console.log('BULKSIZE: ', bulkSize);
         if (!this.fileHandle) {
             throw new Error('Failed to open the file');
         }
 
-        let integrationIds: number[] = [];
+        let eventData: BaseEventData[] = [];
 
         this.readStream = this.fileHandle.createReadStream({
             encoding: 'utf8',
@@ -50,7 +51,7 @@ class CsvFileLoader {
                 if (context.header) {
                   return value; // Do not cast header values
                 }
-                if (context.column === 'id') {
+                if (context.column === 'id' || context.column === 'sqsMessage.Body.id' || context.column === 'sqsMessage.Body.company_id') {
                   return Number(value); // Convert the 'id' column to a number
                 }
                 return value;
@@ -62,15 +63,15 @@ class CsvFileLoader {
         for await (const chunk of parser) {
             // console.log(chunk);
             // yield chunk;
-            integrationIds.push(chunk.id);
+            eventData.push({ id: chunk['sqsMessage.Body.id'], companyId: chunk['sqsMessage.Body.company_id'] });
             // aggregate ids to defined bulk size and return them
-            if (integrationIds.length >= bulkSize) {
-                const toReturn = integrationIds.slice(0, bulkSize);
-                integrationIds = [];
+            if (eventData.length >= bulkSize) {
+                const toReturn = eventData.slice(0, bulkSize);
+                eventData = [];
                 yield toReturn
             }
         }
-        yield integrationIds;
+        yield eventData;
 
         parser.end();
     }

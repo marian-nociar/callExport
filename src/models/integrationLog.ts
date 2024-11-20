@@ -1,24 +1,25 @@
 import mongoose from 'mongoose';
 const { Schema } = mongoose;
 
-const INTEGRATIONS = ['salesforce', 'hubspot', 'pipedrive'] as const;
+const INTEGRATIONS = ['gorgias', 'helpscout', 'hubspot', 'intercom', 'pipedrive', 'salesforce', 'shopify', 'tray', 'zendesk', 'zoho'] as const;
 export type IntegrationTypes = typeof INTEGRATIONS[number];
 
-const FLOWS = ['flowCallCreated'] as const;
+const FLOWS = ['flowCallCreated', 'flowRecordingUploaded'] as const;
 type FlowTypes = typeof FLOWS[number];
 
-const EVENTS = ['call:created'] as const;
+const EVENTS = ['call:created', 'recording:uploaded'] as const;
 type EventTypes = typeof EVENTS[number];
 
 export interface IBody {
-    company_id: string,
+    company_id: number,
     event: EventTypes,
     id: number,
     uuid?: string,
+    integration_id?: number | null,
 };
 
 export interface IIntegration {
-    company_id: string,
+    company_id: number,
     flow: FlowTypes,
     integration_id: number,
     integration_name: IntegrationTypes,
@@ -37,20 +38,20 @@ export interface IIntegration {
 };
 
 const integrationSchema = new Schema<IIntegration>({
-  company_id: String,
+  company_id: Number,
   flow: String,
   integration_id: Number,
   integration_name: String,
   message: {
     Body: {
-        company_id: String,
+        company_id: Number,
         event: String,
         id: Number,
         uuid: String,
     }
   },
   body: {
-    company_id: String,
+    company_id: Number,
     event: String,
     id: Number,
     uuid: String,

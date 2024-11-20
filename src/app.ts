@@ -1,5 +1,6 @@
 import dotenv from 'dotenv';
 dotenv.config();
+import { In } from 'typeorm';
 
 import commander, { program } from 'commander';
 
@@ -12,7 +13,7 @@ import mongodbInstance from './libs/mongo/mongo';
 
 import sqlDbInstance from './libs/mariadb';
 import { Integrations } from './libs/mariadb/entities/integration.entity';
-import { CreateEvent, IHandleEventStrategy, UpdateEvent } from './libs/mongo/eventStrategies';
+import { CreateEvent, IEventData, IHandleEventStrategy, UpdateEvent } from './libs/mongo/eventStrategies';
 import ExportCall from './libs/exportCall';
 
 function sleep(ms: number) {
@@ -30,12 +31,14 @@ function myParseInt(value: string) {
     return parsedValue;
   }
 
+const companyCache: { [key: number]: Integrations[] } = {};
+
 async function main() {
     program
         .option('-n, --new', 'Create a new event instead of modifying original')
         .requiredOption('-f, --file <path>', 'Select csv file with calls for re-export')
         // .option('-e, --event <ids>', 'Comma separated list of IDs')
-        .requiredOption('-i, --integration <id>', 'Id of the integration where the call will be exported')
+        .option('-i, --integration <id>', 'Id of the integration where the call will be exported')
         .option('-ch, --chunkSize [number]', 'size of the integrationIds chunk for re-export', myParseInt, 2)
 
     program.parse(process.argv);
@@ -56,19 +59,22 @@ async function main() {
         ? new CreateEvent()
         : new UpdateEvent();
 
-    // check if integration id is correct
-    const integrationRow = await dataSource.getRepository(Integrations).findOne({
-        where: {id: options.integration},
-        relations: ['integrationExtInstance'],
-    });
-
-    if (!integrationRow || ![2,3].includes(integrationRow.status)) {
-        throw new Error('Integration doesn\'t exist or is inactive!')
+    let integrationRow: Integrations | null = null;
+    if (options.integration) {
+        // check if integration id is correct
+        integrationRow = await dataSource.getRepository(Integrations).findOne({
+            where: {id: options.integration},
+            relations: ['integrationExtInstance'],
+        });
+    
+        if (!integrationRow || ![2,3].includes(integrationRow.status)) {
+            throw new Error('Integration doesn\'t exist or is inactive!')
+        }
     }
 
     // console.log(integrationRow);
 
-    const exportCall = new ExportCall(strategy, integrationRow);
+    const exportCall = new ExportCall(strategy);
 
 
     // TODO: check integrationRow by id
@@ -78,14 +84,35 @@ async function main() {
     let chunkCounter = 0;
     const fl = new CsvFileLoader();
     await fl.openFile(options.file);
-    for await (const ids of fl.getCallIds(options.chunkSize)) {
+    for await (const baseEventDate of fl.getExportData(options.chunkSize)) {
+        const eventData = baseEventDate as IEventData[];
         chunkCounter++;
         console.log('Received chunk:', chunkCounter);
 
-        // console.log(ids);
-        await exportCall.export(ids);
+        if (integrationRow) {
+            for (const event of eventData) {
+                event.integrations = [{ id: integrationRow.id, name: integrationRow.name }];
+            }
+        } else {
+            for (const event of eventData) {
+                if (!companyCache[event.companyId]) {
+                    const integrations = await dataSource.getRepository(Integrations).find({
+                        select: ['id', 'name'],
+                        where: {
+                            companyId: event.companyId,
+                            status: In([2, 3]),
+                        }
+                    });
+                    companyCache[event.companyId] = integrations;
+                }
+                event.integrations = companyCache[event.companyId];
+            }
+        }
+
+        console.log(eventData);
+        await exportCall.export(eventData);
         // wait 2 minutes to process bulk events
-        await sleep(2 * 60 * 1000);
+        await sleep(2 * 20 * 1000);
 
         console.log('Processed chunk:', chunkCounter);
     }

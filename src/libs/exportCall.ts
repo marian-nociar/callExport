@@ -1,18 +1,15 @@
-import { Integrations } from "./mariadb/entities/integration.entity";
-import { IHandleEventStrategy } from "./mongo/eventStrategies";
+import { IEventData, IHandleEventStrategy } from "./mongo/eventStrategies";
 import fs from 'fs';
 
 export default class ExportCall {
     private strategy: IHandleEventStrategy;
-    private integrationRow: any;
     private exportCounter = 0;
 
-    constructor(strategy: IHandleEventStrategy, integrationRow: Integrations) {
+    constructor(strategy: IHandleEventStrategy) {
         this.strategy = strategy;
-        this.integrationRow = integrationRow;
     }
 
-    appendIdToFile(id: number, objectId: string, filePath: string = '/Users/mariannociar/Code/TypeScript/callLogCreation/tmp/output2.csv') {
+    appendIdToFile(id: number, objectId: string, filePath: string = '/Users/mariannociar/Code/TypeScript/callLogCreation/tmp/callRecordingsOut.csv') {
         // Add a newline before appending to ensure each ID is on a new line
         const data = `${id}, ${objectId}\n`;
       
@@ -24,13 +21,15 @@ export default class ExportCall {
         });
       };
 
-    async export(callIds: number[]) {
-        for (const callId of callIds) {
-            const res = await this.strategy.process(this.integrationRow, callId, 1);
+    async export(eventData: IEventData[]) {
+        for (const event of eventData) {
+            const res = await this.strategy.process(event);
             if (res) {
-                const objectId = res._id.toString();
-                // console.log(objectId);
-                this.appendIdToFile(callId, objectId);
+                for (const item of res) {
+                    const objectId = item._id.toString();
+                    this.appendIdToFile(event.id, objectId);
+                    break; // add only single record to output file
+                }
             }
             this.exportCounter++;
         }

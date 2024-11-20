@@ -1,52 +1,65 @@
 import { Types } from "mongoose";
-import Integration, { IBody, IIntegration } from "../../models/integrationLog";
+import Integration, { IBody, IIntegration, IntegrationTypes } from "../../models/integrationLog";
 import { Integrations } from "../mariadb/entities/integration.entity";
 import moment from 'moment';
+import { Resources } from "../resources";
 
+export interface IEventData {
+    id: number;
+    companyId: number;
+    integrations: {
+        id: number;
+        name: IntegrationTypes;
+    }[];
+}
+export type BaseEventData = Omit<IEventData, "integrations">;
 export interface IHandleEventStrategy {
-    process(integrationRow: Integrations, callId: number, serviceId: number): Promise<IIntegration & { _id: Types.ObjectId; } | null>
+    process(data: IEventData): Promise<(IIntegration & { _id: Types.ObjectId; })[]>
 }
 
 export class CreateEvent implements IHandleEventStrategy {
-    async process(integrationRow: Integrations, callId: number, serviceId: number): Promise<IIntegration & { _id: Types.ObjectId; } | null> {
+    async process(data: IEventData): Promise<(IIntegration & { _id: Types.ObjectId; })[]> {
         // console.log('Create event called');
         const timeStamp = moment().subtract(3, 'hours').format('YYYY-MM-DD HH:mm:ss.SSSS');
-        const body: IBody = {
-            company_id: integrationRow.companyId.toString(),
-            event: "call:created",
-            id: callId,
-            // model: null,
-            // integration_id: null,
-            // uuid: "8f387a40-8960-4195-ad22-182a9d5de811"
+        const res = [];
+        for (const integration of data.integrations) {
+            const body: IBody = {
+                company_id: data.companyId,
+                event: "call:created", // "call:created", "recording:uploaded"
+                id: data.id,
+                // model: null,
+                integration_id: integration.id,
+                // uuid: "8f387a40-8960-4195-ad22-182a9d5de811"
+            }
+    
+            const intgrEventLog = new Integration<IIntegration>({
+                company_id: data.companyId,
+                flow: 'flowCallCreated', //'flowCallCreated', 'flowRecordingUploaded'
+                integration_name: integration.name,
+                integration_id: integration.id,
+                message: { Body: body },
+                body: body,
+                entity_id: data.id,
+                status: 0,
+                status_stages: [{
+                    data: 'saved-to-db',
+                    datetime: timeStamp
+                }],
+                error_stages: [],
+                created: timeStamp,
+                modified: timeStamp,
+                serviceName: `integrations-${integration.name}-${Resources.getPodId(integration.name)}`,
+            });
+
+            res.push(await intgrEventLog.save());
         }
-
-        const intgrEventLog = new Integration<IIntegration>({
-            company_id: integrationRow.companyId.toString(),
-            flow: 'flowCallCreated',
-            integration_name: integrationRow.name,
-            integration_id: integrationRow.id,
-            message: { Body: body },
-            body: body,
-            entity_id: callId,
-            status: 0,
-            status_stages: [{
-                data: 'saved-to-db',
-                datetime: timeStamp
-            }],
-            error_stages: [],
-            created: timeStamp,
-            modified: timeStamp,
-            serviceName: `integrations-${integrationRow.name}-${serviceId}`
-        });
-
-        const res = await intgrEventLog.save();
         return res;
     }
 }
 
 export class UpdateEvent implements IHandleEventStrategy {
-    async process(integrationRow: Integrations, callId: number, serviceId: number): Promise<IIntegration & { _id: Types.ObjectId; } | null> {
+    async process(data: IEventData): Promise<(IIntegration & { _id: Types.ObjectId; })[]> {
         // console.log('Update event called');
-        return null;
+        return [];
     }
 }

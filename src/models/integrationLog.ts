@@ -34,7 +34,7 @@ export interface IIntegration {
     error_stages: string[],
     created: string,
     modified: string,
-    serviceName: `integrations-${IntegrationTypes}-${number}`,
+    serviceName: string,
 };
 
 const integrationSchema = new Schema<IIntegration>({

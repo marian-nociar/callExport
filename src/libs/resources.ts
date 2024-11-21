@@ -65,7 +65,7 @@ export class Resources {
         this.limitReached = false;
     }
 
-    public static getPodId(name: IntegrationTypes | 'general'): number {
+    public static getPod(name: IntegrationTypes | 'general'): string {
         let podId: number;
         if (!this.resources[name]) {
             name = 'general';
@@ -75,6 +75,6 @@ export class Resources {
         if (this.resources[name].counter / this.resources[name].podsCount >= 200) {
             this.limitReached = true;
         }
-        return podId;
+        return `${name}-${podId}`;
     }
 }

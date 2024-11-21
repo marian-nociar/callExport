@@ -52,7 +52,7 @@ export class CreateEvent implements IHandleEventStrategy {
                 error_stages: [],
                 created: timeStamp,
                 modified: timeStamp,
-                serviceName: `integrations-${integration.name}-${Resources.getPodId(integration.name)}`,
+                serviceName: `integrations-${Resources.getPod(integration.name)}`,
             });
 
             res.push(await intgrEventLog.save());

@@ -6,7 +6,7 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "build": "rm -rf dist && tsc",
-    "start": "tsc && node dist/app.js",
+    "start": "tsc && node dist/app.js -ch 10 -n -f /Users/mariannociar/Code/TypeScript/callLogCreation/tmp/12november.csv",
     "dev": "nodemon --inspect src/app.ts",
     "genEnv": "cp .env.sample .env"
   },

@@ -51,6 +51,20 @@ export class Resources {
         },
     }
 
+    private static limitReached: boolean = false;
+
+    public static isLimitReached(): boolean {
+        return this.limitReached;
+    }
+
+    public static resetLimit(): void {
+        for (const key in this.resources) {
+            const resource = this.resources[key as IntegrationTypes | 'general'];
+            resource.counter = resource.counter % resource.podsCount;
+        }
+        this.limitReached = false;
+    }
+
     public static getPodId(name: IntegrationTypes | 'general'): number {
         let podId: number;
         if (!this.resources[name]) {
@@ -58,6 +72,9 @@ export class Resources {
         }
         podId = this.resources[name].counter % this.resources[name].podsCount;
         this.resources[name].counter++;
+        if (this.resources[name].counter / this.resources[name].podsCount >= 200) {
+            this.limitReached = true;
+        }
         return podId;
     }
 }

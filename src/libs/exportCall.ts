@@ -9,7 +9,7 @@ export default class ExportCall {
         this.strategy = strategy;
     }
 
-    appendIdToFile(id: number, objectId: string, filePath: string = '/Users/mariannociar/Code/TypeScript/callLogCreation/tmp/callRecordingsOut.csv') {
+    appendIdToFile(id: number, objectId: string, filePath: string = '/Users/mariannociar/Code/TypeScript/callLogCreation/tmp/output.csv') {
         // Add a newline before appending to ensure each ID is on a new line
         const data = `${id}, ${objectId}\n`;
       

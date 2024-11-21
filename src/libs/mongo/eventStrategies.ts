@@ -19,9 +19,13 @@ export interface IHandleEventStrategy {
 
 export class CreateEvent implements IHandleEventStrategy {
     async process(data: IEventData): Promise<(IIntegration & { _id: Types.ObjectId; })[]> {
-        // console.log('Create event called');
+        console.log('Processing eventId: ', data.id);
         const timeStamp = moment().subtract(3, 'hours').format('YYYY-MM-DD HH:mm:ss.SSSS');
-        const res = [];
+        const res: (IIntegration & { _id: Types.ObjectId; })[] = [];
+        if (data.integrations.length === 0) {
+            console.log('No integrations found for entityId: ', data.id);
+            return res;
+        }
         for (const integration of data.integrations) {
             const body: IBody = {
                 company_id: data.companyId,

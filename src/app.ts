@@ -15,6 +15,7 @@ import sqlDbInstance from './libs/mariadb';
 import { Integrations } from './libs/mariadb/entities/integration.entity';
 import { CreateEvent, IEventData, IHandleEventStrategy, UpdateEvent } from './libs/mongo/eventStrategies';
 import ExportCall from './libs/exportCall';
+import { Resources } from './libs/resources';
 
 function sleep(ms: number) {
     return new Promise(resolve => setTimeout(resolve, ms));
@@ -87,7 +88,7 @@ async function main() {
     for await (const baseEventDate of fl.getExportData(options.chunkSize)) {
         const eventData = baseEventDate as IEventData[];
         chunkCounter++;
-        console.log('Received chunk:', chunkCounter);
+        // console.log('Received chunk:', chunkCounter);
 
         if (integrationRow) {
             for (const event of eventData) {
@@ -109,12 +110,17 @@ async function main() {
             }
         }
 
-        console.log(eventData);
+        // console.log(eventData);
         await exportCall.export(eventData);
-        // wait 2 minutes to process bulk events
-        await sleep(2 * 20 * 1000);
 
-        console.log('Processed chunk:', chunkCounter);
+        // if some pod will reach more than 200 events, wait 2 minutes
+        if (Resources.isLimitReached()) {
+            Resources.resetLimit();
+
+            console.log('Limit reached. Sleep for 2 minutes. Chunk: ', chunkCounter);
+            // wait 2 minutes to process bulk events
+            await sleep(2 * 60 * 1000);
+        }
     }
 
     await fl.closeFile();
